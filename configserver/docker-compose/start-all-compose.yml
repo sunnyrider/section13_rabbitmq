@@ -406,8 +406,8 @@ services:
   accounts:
     image: "sunnyrider/accounts:S13rmq"
     container_name: accounts-ms
-    ports:
-      - "8083:8083"
+#    ports:
+#      - "8083:8083"
     healthcheck:
       test: "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/8083' || exit 1"
       interval: 20s
@@ -432,8 +432,8 @@ services:
   loans:
     image: "sunnyrider/loans:S13rmq"
     container_name: loans-ms
-    ports:
-      - "8090:8090"
+#    ports:
+#      - "8090:8090"
     healthcheck:
       test: "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/8090' || exit 1"
       interval: 20s
@@ -458,8 +458,8 @@ services:
   cards:
     image: "sunnyrider/cards:S13rmq"
     container_name: cards-ms
-    ports:
-      - "9000:9000"
+#    ports:
+#      - "9000:9000"
     healthcheck:
       test: "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1"
       interval: 20s
@@ -496,11 +496,12 @@ services:
       redis:
         condition: service_healthy
     environment:
-      SPRING_APPLICATION_NAME: "gatewayserver"
       SPRING_DATA_REDIS_CONNECT_TIMEOUT: 2s
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_TIMEOUT: 1s
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://keycloak:8080/realms/master/protocol/openid-connect/certs"
+      SPRING_APPLICATION_NAME: "gatewayserver"
       OTEL_SERVICE_NAME: "gatewayserver"
     extends:
       file: common-config.yml
