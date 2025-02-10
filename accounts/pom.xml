@@ -130,7 +130,7 @@
 				<version>3.4.2</version>
 				<configuration>
 					<to>
-						<image>docker.io/sunnyrider/${project.artifactId}:S12sec</image>
+						<image>docker.io/sunnyrider/${project.artifactId}:S13rmq</image>
 					</to>
 				</configuration>
 			</plugin>

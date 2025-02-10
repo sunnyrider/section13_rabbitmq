@@ -119,7 +119,7 @@
 				<version>3.4.2</version>
 				<configuration>
 					<to>
-						<image>sunnyrider/${project.artifactId}:S12sec</image>
+						<image>sunnyrider/${project.artifactId}:S13rmq</image>
 					</to>
 				</configuration>
 			</plugin>
