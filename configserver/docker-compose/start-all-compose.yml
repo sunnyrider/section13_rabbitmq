@@ -92,19 +92,6 @@ services:
       file: common-config.yml
       service: network-deploy-service
 
-#  init:
-#    image: &tempoImage grafana/tempo:latest
-#    user: root
-#    entrypoint:
-#      - "chown"
-#      - "10001:10001"
-#      - "/var/tempo"
-#    volumes:
-#      - ./observability/tempo/tempo.yml:/etc/tempo-config.yml
-#    extends:
-#      file: common-config.yml
-#      service: network-deploy-service
-
   tempo:
     image: grafana/tempo:latest
     container_name: tempo
@@ -240,21 +227,69 @@ services:
     networks:
       - eazybank
 
-  rabbit:
-    image: rabbitmq:4.0-management
-    container_name: rabbitmq
-    hostname: rabbitmq
-    networks:
-      - eazybank
+#  rabbit:
+#    image: rabbitmq:4.0-management
+#    container_name: rabbitmq
+#    hostname: rabbitmq
+#    networks:
+#      - eazybank
+#    ports:
+#      - "5672:5672"
+#      - "15672:15672"
+#    healthcheck:
+#      test: rabbitmq-diagnostics check_port_connectivity
+#      interval: 10s
+#      timeout: 5s
+#      retries: 10
+#      start_period: 5s
+
+#  kafka:
+#    image: docker.io/bitnami/kafka:latest
+#    hostname: kafka
+#    ports:
+#      - "9092:9092"
+#    volumes:
+#      - ./data/kafka-b1:/bitnami/kafka"
+#    environment:
+#       KRaft settings
+#      - KAFKA_CFG_NODE_ID=0
+#      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+#      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9092
+#       Listeners
+#      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9092
+#      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://:9092
+#      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+#      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+#      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+#    extends:
+#      file: common-config.yml
+#      service: network-deploy-service
+
+  kafka:
+    image: docker.io/bitnami/kafka:latest
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "9092:9092"
     healthcheck:
-      test: rabbitmq-diagnostics check_port_connectivity
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 5s
+      test: ["CMD-SHELL", "echo 'test-message' | kafka-console-producer.sh --broker-list localhost:9092 --topic health-check-topic && kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic health-check-topic --from-beginning --max-messages 1 | grep 'test-message'"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./data/kafka-b1:/bitnami
+    environment:
+      # KRaft settings
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      # Listeners
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+    extends:
+      file: common-config.yml
+      service: network-deploy-service
 
   accountsdb:
     image: mysql:latest
@@ -269,8 +304,9 @@ services:
       start_period: 10s
     volumes:
       - accounts_data:/var/lib/mysql
-    networks:
-      - eazybank
+    extends:
+      file: common-config.yml
+      service: network-deploy-service
     environment:
       MYSQL_DATABASE: accountsdb
       MYSQL_ROOT_PASSWORD: root
@@ -288,8 +324,9 @@ services:
       start_period: 10s
     volumes:
       - loans_data:/var/lib/mysql
-    networks:
-      - eazybank
+    extends:
+      file: common-config.yml
+      service: network-deploy-service
     environment:
       MYSQL_DATABASE: loansdb
       MYSQL_ROOT_PASSWORD: root
@@ -307,8 +344,9 @@ services:
       start_period: 10s
     volumes:
       - cards_data:/var/lib/mysql
-    networks:
-      - eazybank
+    extends:
+      file: common-config.yml
+      service: network-deploy-service
     environment:
       MYSQL_DATABASE: cardsdb
       MYSQL_ROOT_PASSWORD: root
@@ -362,7 +400,7 @@ services:
     ports:
       - "8071:8071"
     depends_on:
-      rabbit:
+      kafka:
         condition: service_healthy
     healthcheck:
       #test:"curl --fail --silent localhost:8071/actuator/health/readiness | grep UO || exit 1"
@@ -410,8 +448,8 @@ services:
       retries: 20
       start_period: 10s
     depends_on:
-      rabbit:
-        condition: service_healthy
+#      rabbit:
+#        condition: service_healthy
       accountsdb:
         condition: service_healthy
       configserver:
@@ -421,7 +459,8 @@ services:
     environment:
       SPRING_APPLICATION_NAME: "accounts"
       OTEL_SERVICE_NAME: "accounts"
-      SPRING_RABBITMQ_HOST: "rabbit"
+#      SPRING_RABBITMQ_HOST: "rabbit"
+#      SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS: "kafka:9092"
       SPRING_DATASOURCE_URL: "jdbc:mysql://accountsdb:3306/accountsdb"
     extends:
       file: common-config.yml
@@ -482,12 +521,13 @@ services:
   message:
     image: "sunnyrider/message:S13rmq"
     container_name: message-ms
-    depends_on:
-      rabbit:
-        condition: service_healthy
+#    depends_on:
+#      rabbit:
+#        condition: service_healthy
     environment:
       SPRING_APPLICATION_NAME: "message"
-      SPRING_RABBITMQ_HOST: "rabbit"
+#      SPRING_RABBITMQ_HOST: "rabbit"
+      SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS: "kafka:9092"
     extends:
       file: common-config.yml
       service: network-deploy-service

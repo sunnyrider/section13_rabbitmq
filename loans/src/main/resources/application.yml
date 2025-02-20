@@ -31,11 +31,17 @@ spring:
 #    show-sql: true
   config:
     import: "optional:configserver:http://localhost:8071/"
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: "guest"
-    password: "guest"
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers:
+            - localhost:9092
+#  rabbitmq:
+#    host: localhost
+#    port: 5672
+#    username: "guest"
+#    password: "guest"
 
 management:
   endpoints:

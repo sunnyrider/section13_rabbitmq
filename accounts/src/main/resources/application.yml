@@ -38,18 +38,33 @@ spring:
     function:
       definition: updateCommunication
     stream:
+      kafka:
+        binder:
+          brokers:
+            - localhost:9092
+      default-binder: kafka
       bindings:
         updateCommunication-in-0:
           destination: communication-sent
           group: ${spring.application.name}
+          binder: kafka
         sendCommunication-out-0:
           destination: send-communication
+          binder: kafka
+    binders:
+      kafka:
+        type: kafka
+#      rabbit:
+#        type: rabbit
 
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: "guest"
-    password: "guest"
+  kafka:
+    bootstrap-servers: localhost:9092
+
+#  rabbitmq:
+#    host: localhost
+#    port: 5672
+#    username: "guest"
+#    password: "guest"
 
 management:
   endpoints:
